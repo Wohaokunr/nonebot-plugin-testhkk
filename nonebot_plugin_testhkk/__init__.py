@@ -27,8 +27,11 @@ from nonebot.adapters import Event
 
 from .ai_chat import chat_with_ai, load_usage_records
 
+# 获取 driver 实例
+driver = get_driver()
+
 # 启动时加载使用记录
-@on_startup
+@driver.on_startup
 async def _():
     await load_usage_records()
 
