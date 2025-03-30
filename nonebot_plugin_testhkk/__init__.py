@@ -9,9 +9,9 @@ require("nonebot_plugin_apscheduler")
 from .config import Config
 
 __plugin_meta__ = PluginMetadata(
-    name="名称",
-    description="描述",
-    usage="用法",
+    name="AI 群聊助手",
+    description="基于 OpenAI 的群聊 AI 对话插件",
+    usage="使用方法：\n1. 发送 '!ai <问题>' 进行 AI 对话\n2. 发送 '!ai 帮助' 查看帮助信息",
     type="application",  # library
     homepage="https://github.com/Wohaokunr/nonebot-plugin-testhkk",
     config=Config,
@@ -23,7 +23,56 @@ __plugin_meta__ = PluginMetadata(
 from arclet.alconna import Alconna, Args, Arparma, Option, Subcommand
 from nonebot_plugin_alconna import on_alconna
 from nonebot_plugin_alconna.uniseg import UniMessage
+from nonebot.adapters import Event
 
+from .ai_chat import chat_with_ai, load_usage_records
+
+# 启动时加载使用记录
+@on_startup
+async def _():
+    await load_usage_records()
+
+# AI 对话命令
+ai_chat = on_alconna(
+    Alconna(
+        "!ai",
+        Args["prompt", str],
+    )
+)
+
+@ai_chat.handle()
+async def handle_ai_chat(event: Event, result: Arparma):
+    prompt = result.all_matched_args.get("prompt", "")
+    
+    # 处理帮助命令
+    if prompt.strip() == "帮助":
+        help_text = (
+            "AI 群聊助手使用指南：\n"
+            "1. 发送 '!ai <问题>' 进行 AI 对话\n"
+            "2. 每人每天可使用 AI 对话 {limit} 次\n"
+            "3. 示例：!ai 介绍一下自己"
+        ).format(limit=Config.openai_daily_limit)
+        await UniMessage.text(help_text).send()
+        return
+    
+    # 空提示词处理
+    if not prompt.strip():
+        await UniMessage.text("请输入有效的问题，例如：!ai 今天天气怎么样？").send()
+        return
+    
+    # 获取用户ID
+    user_id = str(event.get_user_id())
+    
+    # 发送等待消息
+    await UniMessage.text("正在思考中...").send()
+    
+    # 调用 AI 对话
+    response = await chat_with_ai(prompt, user_id)
+    
+    # 发送回复
+    await UniMessage.text(response).send()
+
+# 保留原有的 pip 命令示例
 pip = on_alconna(
     Alconna(
         "pip",

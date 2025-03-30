@@ -3,7 +3,13 @@ from pydantic import BaseModel
 
 
 class Config(BaseModel):
-    pass
+    # OpenAI API 配置
+    openai_api_key: str = ""
+    openai_model: str = "gpt-3.5-turbo"
+    openai_temperature: float = 0.7
+    openai_max_tokens: int = 1000
+    # 每个用户每天可以调用的次数限制
+    openai_daily_limit: int = 10
 
 
 # 配置加载
